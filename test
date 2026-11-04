@@ -1,280 +1,727 @@
+# --------------------------------------------------
+# Project Configuration
+# --------------------------------------------------
+
+variable "project_id" {
+
+  description = "The GCP project ID where Cloud CDN resources will be created."
+
+  type = string
+}
+
+variable "enable_apis" {
+
+  description = "Whether to enable the required Google Cloud APIs."
+
+  type = bool
+
+  default = true
+}
+
+# --------------------------------------------------
+# Cloud Storage Configuration
+# --------------------------------------------------
+
+variable "bucket_name" {
+
+  description = "Name of the Cloud Storage bucket used as the CDN origin."
+
+  type = string
+}
+
+variable "bucket_location" {
+
+  description = "Location of the Cloud Storage bucket."
+
+  type = string
+
+  default = "US"
+}
+
+variable "force_destroy" {
+
+  description = "Allows deletion of a bucket containing objects."
+
+  type = bool
+
+  default = false
+}
+
+variable "uniform_bucket_level_access" {
+
+  description = "Enables uniform bucket-level IAM access."
+
+  type = bool
+
+  default = true
+}
+
+variable "make_bucket_public" {
+
+  description = "Whether to grant allUsers object viewer access. Only enable for intentionally public content."
+
+  type = bool
+
+  default = false
+}
+
+variable "bucket_labels" {
+
+  description = "Labels assigned to the Cloud Storage bucket."
+
+  type = map(string)
+
+  default = {}
+}
+
+# --------------------------------------------------
+# Backend Bucket Configuration
+# --------------------------------------------------
+
+variable "backend_bucket_name" {
+
+  description = "Name of the Cloud CDN backend bucket."
+
+  type = string
+}
+
+variable "backend_bucket_description" {
+
+  description = "Description of the CDN backend bucket."
+
+  type = string
+
+  default = "Cloud CDN backend bucket"
+}
+
+variable "enable_cdn" {
+
+  description = "Enables Cloud CDN on the backend bucket."
+
+  type = bool
+
+  default = true
+}
+
+variable "compression_mode" {
+
+  description = "Compression mode for backend responses."
+
+  type = string
+
+  default = "AUTOMATIC"
+
+  validation {
+
+    condition = contains(
+      ["AUTOMATIC", "DISABLED"],
+      var.compression_mode
+    )
+
+    error_message = "compression_mode must be AUTOMATIC or DISABLED."
+  }
+}
+
+variable "custom_response_headers" {
+
+  description = "Custom response headers added by the load balancer."
+
+  type = list(string)
+
+  default = []
+}
+
+variable "edge_security_policy" {
+
+  description = "Optional Cloud Armor edge security policy self-link."
+
+  type = string
+
+  default = null
+}
+
+# --------------------------------------------------
+# CDN Cache Configuration
+# --------------------------------------------------
+
+variable "cache_mode" {
+
+  description = "Cloud CDN cache mode."
+
+  type = string
+
+  default = "CACHE_ALL_STATIC"
+
+  validation {
+
+    condition = contains(
+      [
+        "USE_ORIGIN_HEADERS",
+        "FORCE_CACHE_ALL",
+        "CACHE_ALL_STATIC"
+      ],
+      var.cache_mode
+    )
+
+    error_message = "Invalid Cloud CDN cache mode."
+  }
+}
+
+variable "default_ttl" {
+
+  description = "Default cache TTL in seconds."
+
+  type = number
+
+  default = 3600
+}
+
+variable "max_ttl" {
+
+  description = "Maximum cache TTL in seconds."
+
+  type = number
+
+  default = 86400
+}
+
+variable "client_ttl" {
+
+  description = "Client cache TTL in seconds."
+
+  type = number
+
+  default = 3600
+}
+
+variable "negative_caching" {
+
+  description = "Enables negative caching for HTTP error responses."
+
+  type = bool
+
+  default = true
+}
+
+variable "negative_caching_policy" {
+
+  description = "Custom negative caching policies for HTTP status codes."
+
+  type = list(object({
+
+    code = number
+
+    ttl = number
+
+  }))
+
+  default = []
+}
+
+variable "serve_while_stale" {
+
+  description = "Time in seconds to serve stale cached content."
+
+  type = number
+
+  default = 86400
+}
+
+variable "signed_url_cache_max_age_sec" {
+
+  description = "Maximum cache age for signed URL responses in seconds."
+
+  type = number
+
+  default = 3600
+}
+
+variable "request_coalescing" {
+
+  description = "Combines concurrent cache fill requests."
+
+  type = bool
+
+  default = true
+}
+
+variable "cache_key_policy" {
+
+  description = "Controls which query strings and HTTP headers are included in cache keys."
+
+  type = object({
+
+    query_string_whitelist = optional(list(string), [])
+
+    include_http_headers = optional(list(string), [])
+
+  })
+
+  default = null
+}
+
+variable "bypass_cache_on_request_headers" {
+
+  description = "Request headers that bypass CDN caching."
+
+  type = list(string)
+
+  default = []
+}
+
+# --------------------------------------------------
+# URL Map Configuration
+# --------------------------------------------------
+
+variable "url_map_name" {
+
+  description = "Name of the global URL map."
+
+  type = string
+}
+
+variable "url_map_description" {
+
+  description = "Description of the global URL map."
+
+  type = string
+
+  default = "Global URL map for Cloud CDN"
+}
+
+# --------------------------------------------------
+# Global IP Configuration
+# --------------------------------------------------
+
+variable "global_ip_name" {
+
+  description = "Name of the global external IP address."
+
+  type = string
+}
+
+variable "ip_version" {
+
+  description = "IP version for the global address."
+
+  type = string
+
+  default = "IPV4"
+
+  validation {
+
+    condition = contains(
+      ["IPV4", "IPV6"],
+      var.ip_version
+    )
+
+    error_message = "ip_version must be IPV4 or IPV6."
+  }
+}
+
+# --------------------------------------------------
+# HTTP Configuration
+# --------------------------------------------------
+
+variable "enable_http" {
+
+  description = "Whether to create HTTP proxy and forwarding rule."
+
+  type = bool
+
+  default = true
+}
+
+variable "http_proxy_name" {
+
+  description = "Name of the HTTP proxy."
+
+  type = string
+}
+
+variable "http_forwarding_rule_name" {
+
+  description = "Name of the HTTP forwarding rule."
+
+  type = string
+}
+
+# --------------------------------------------------
+# HTTPS Configuration
+# --------------------------------------------------
+
+variable "enable_https" {
+
+  description = "Whether to create HTTPS proxy and forwarding rule."
+
+  type = bool
+
+  default = false
+}
+
+variable "domain_names" {
+
+  description = "Domain names used by the Google-managed SSL certificate."
+
+  type = list(string)
+
+  default = []
+
+  validation {
+
+    condition = length(var.domain_names) == length(distinct(var.domain_names))
+
+    error_message = "Domain names must be unique."
+  }
+}
+
+variable "ssl_certificate_name" {
+
+  description = "Name of the Google-managed SSL certificate."
+
+  type = string
+
+  default = "cdn-managed-ssl"
+}
+
+variable "https_proxy_name" {
+
+  description = "Name of the HTTPS proxy."
+
+  type = string
+
+  default = "cdn-https-proxy"
+}
+
+variable "https_forwarding_rule_name" {
+
+  description = "Name of the HTTPS forwarding rule."
+
+  type = string
+
+  default = "cdn-https-forwarding-rule"
+}
+
+# --------------------------------------------------
+# Load Balancer Configuration
+# --------------------------------------------------
+
+variable "load_balancing_scheme" {
+
+  description = "Load balancing scheme for the global forwarding rules."
+
+  type = string
+
+  default = "EXTERNAL_MANAGED"
+
+  validation {
+
+    condition = contains(
+      ["EXTERNAL", "EXTERNAL_MANAGED"],
+      var.load_balancing_scheme
+    )
+
+    error_message = "Use EXTERNAL or EXTERNAL_MANAGED."
+  }
+}
+
+variable "network_tier" {
+
+  description = "Network tier for global forwarding rules."
+
+  type = string
+
+  default = "PREMIUM"
+
+  validation {
+
+    condition = contains(
+      ["PREMIUM"],
+      var.network_tier
+    )
+
+    error_message = "Global external forwarding rules in this module use PREMIUM network tier."
+  }
+}
+
+# --------------------------------------------------
+# Region Configuration
+# --------------------------------------------------
+
+variable "region" {
+
+  description = "Default GCP provider region."
+
+  type = string
+
+  default = "us-central1"
+}
+
+===========================================================================================================
+
+# --------------------------------------------------
+# Cloud Storage Outputs
+# --------------------------------------------------
+
+output "cdn_bucket_name" {
+
+  description = "Cloud Storage bucket name."
+
+  value = google_storage_bucket.cdn_bucket.name
+}
+
+output "cdn_bucket_url" {
+
+  description = "Cloud Storage bucket URL."
+
+  value = google_storage_bucket.cdn_bucket.url
+}
+
+# --------------------------------------------------
+# Backend Bucket Outputs
+# --------------------------------------------------
+
+output "cdn_backend_bucket_id" {
+
+  description = "Cloud CDN backend bucket ID."
+
+  value = google_compute_backend_bucket.cdn_backend.id
+}
+
+output "cdn_backend_bucket_self_link" {
+
+  description = "Cloud CDN backend bucket self link."
+
+  value = google_compute_backend_bucket.cdn_backend.self_link
+}
+
+# --------------------------------------------------
+# URL Map Outputs
+# --------------------------------------------------
+
+output "cdn_url_map_id" {
+
+  description = "Global URL map ID."
+
+  value = google_compute_url_map.cdn_url_map.id
+}
+
+# --------------------------------------------------
+# Global IP Outputs
+# --------------------------------------------------
+
+output "cdn_global_ip" {
+
+  description = "Global external IP address."
+
+  value = google_compute_global_address.cdn_ip.address
+}
+
+# --------------------------------------------------
+# HTTP Outputs
+# --------------------------------------------------
+
+output "cdn_http_url" {
+
+  description = "HTTP URL for Cloud CDN."
+
+  value = var.enable_http ? "http://${google_compute_global_address.cdn_ip.address}" : null
+}
+
+output "cdn_http_forwarding_rule_id" {
+
+  description = "HTTP forwarding rule ID."
+
+  value = var.enable_http ? google_compute_global_forwarding_rule.cdn_http_forwarding[0].id : null
+}
+
+# --------------------------------------------------
+# HTTPS Outputs
+# --------------------------------------------------
+
+output "cdn_https_url" {
+
+  description = "HTTPS URL for Cloud CDN."
+
+  value = var.enable_https ? "https://${var.domain_names[0]}" : null
+}
+
+output "cdn_ssl_certificate_id" {
+
+  description = "Google-managed SSL certificate ID."
+
+  value = var.enable_https ? google_compute_managed_ssl_certificate.cdn_ssl_certificate[0].id : null
+}
+
+output "cdn_https_forwarding_rule_id" {
+
+  description = "HTTPS forwarding rule ID."
+
+  value = var.enable_https ? google_compute_global_forwarding_rule.cdn_https_forwarding[0].id : null
+}
+
+
+==========================================================================================
+
+
 terraform {
+
   required_version = ">= 1.3.0"
 
   required_providers {
+
     google = {
+
       source  = "hashicorp/google"
+
       version = ">= 6.0"
     }
   }
 }
 
 # --------------------------------------------------
-# Enable Required APIs
+# Provider Configuration
 # --------------------------------------------------
 
-resource "google_project_service" "required_apis" {
-
-  for_each = var.enable_apis ? toset([
-    "compute.googleapis.com",
-    "storage.googleapis.com"
-  ]) : toset([])
+provider "google" {
 
   project = var.project_id
 
-  service = each.value
-
-  disable_on_destroy = false
+  region = var.region
 }
 
 # --------------------------------------------------
-# Cloud Storage Bucket
+# Cloud CDN Module
 # --------------------------------------------------
 
-resource "google_storage_bucket" "cdn_bucket" {
+module "cloud_cdn" {
 
-  project = var.project_id
+  source = "../"
 
-  name = var.bucket_name
+  # Project Configuration
 
-  location = var.bucket_location
+  project_id = var.project_id
 
-  force_destroy = var.force_destroy
+  enable_apis = true
 
-  uniform_bucket_level_access = var.uniform_bucket_level_access
+  region = var.region
 
-  public_access_prevention = var.make_bucket_public ? "inherited" : "enforced"
+  # Storage Configuration
 
-  labels = var.bucket_labels
+  bucket_name = "my-demo-cloud-cdn-bucket-12345"
 
-  depends_on = [
-    google_project_service.required_apis
-  ]
-}
+  bucket_location = "US"
 
-# --------------------------------------------------
-# Cloud Storage IAM Permission
-# --------------------------------------------------
+  force_destroy = false
 
-resource "google_storage_bucket_iam_member" "public_access" {
+  uniform_bucket_level_access = true
 
-  count = var.make_bucket_public ? 1 : 0
+  make_bucket_public = true
 
-  bucket = google_storage_bucket.cdn_bucket.name
+  bucket_labels = {
 
-  role = "roles/storage.objectViewer"
+    environment = "sandbox"
 
-  member = "allUsers"
-}
-
-# --------------------------------------------------
-# Cloud CDN Backend Bucket
-# --------------------------------------------------
-
-resource "google_compute_backend_bucket" "cdn_backend" {
-
-  project = var.project_id
-
-  name = var.backend_bucket_name
-
-  description = var.backend_bucket_description
-
-  bucket_name = google_storage_bucket.cdn_bucket.name
-
-  enable_cdn = var.enable_cdn
-
-  compression_mode = var.compression_mode
-
-  custom_response_headers = var.custom_response_headers
-
-  edge_security_policy = var.edge_security_policy
-
-  cdn_policy {
-
-    cache_mode = var.cache_mode
-
-    default_ttl = var.default_ttl
-
-    max_ttl = var.max_ttl
-
-    client_ttl = var.client_ttl
-
-    negative_caching = var.negative_caching
-
-    serve_while_stale = var.serve_while_stale
-
-    signed_url_cache_max_age_sec = var.signed_url_cache_max_age_sec
-
-    request_coalescing = var.request_coalescing
-
-    dynamic "negative_caching_policy" {
-
-      for_each = var.negative_caching_policy
-
-      content {
-        code = negative_caching_policy.value.code
-
-        ttl = negative_caching_policy.value.ttl
-      }
-    }
-
-    dynamic "cache_key_policy" {
-
-      for_each = var.cache_key_policy == null ? [] : [var.cache_key_policy]
-
-      content {
-
-        query_string_whitelist = cache_key_policy.value.query_string_whitelist
-
-        include_http_headers = cache_key_policy.value.include_http_headers
-      }
-    }
-
-    dynamic "bypass_cache_on_request_headers" {
-
-      for_each = var.bypass_cache_on_request_headers
-
-      content {
-
-        header_name = bypass_cache_on_request_headers.value
-      }
-    }
+    managed_by  = "terraform"
   }
 
-  depends_on = [
-    google_storage_bucket.cdn_bucket,
-    google_storage_bucket_iam_member.public_access
+  # Backend Configuration
+
+  backend_bucket_name = "demo-cdn-backend"
+
+  backend_bucket_description = "Sandbox Cloud CDN backend"
+
+  enable_cdn = true
+
+  compression_mode = "AUTOMATIC"
+
+  # CDN Configuration
+
+  cache_mode = "CACHE_ALL_STATIC"
+
+  default_ttl = 3600
+
+  max_ttl = 86400
+
+  client_ttl = 3600
+
+  negative_caching = true
+
+  negative_caching_policy = [
+
+    {
+      code = 404
+
+      ttl = 120
+    },
+
+    {
+      code = 500
+
+      ttl = 60
+    }
   ]
-}
 
-# --------------------------------------------------
-# Global URL Map
-# --------------------------------------------------
+  serve_while_stale = 86400
 
-resource "google_compute_url_map" "cdn_url_map" {
+  signed_url_cache_max_age_sec = 3600
 
-  project = var.project_id
+  request_coalescing = true
 
-  name = var.url_map_name
+  cache_key_policy = {
 
-  description = var.url_map_description
+    query_string_whitelist = [
+      "version"
+    ]
 
-  default_service = google_compute_backend_bucket.cdn_backend.id
-}
-
-# --------------------------------------------------
-# Global Static IP Address
-# --------------------------------------------------
-
-resource "google_compute_global_address" "cdn_ip" {
-
-  project = var.project_id
-
-  name = var.global_ip_name
-
-  ip_version = var.ip_version
-
-  address_type = "EXTERNAL"
-}
-
-# --------------------------------------------------
-# HTTP Proxy
-# --------------------------------------------------
-
-resource "google_compute_target_http_proxy" "cdn_http_proxy" {
-
-  count = var.enable_http ? 1 : 0
-
-  project = var.project_id
-
-  name = var.http_proxy_name
-
-  url_map = google_compute_url_map.cdn_url_map.id
-}
-
-# --------------------------------------------------
-# HTTP Global Forwarding Rule
-# --------------------------------------------------
-
-resource "google_compute_global_forwarding_rule" "cdn_http_forwarding" {
-
-  count = var.enable_http ? 1 : 0
-
-  project = var.project_id
-
-  name = var.http_forwarding_rule_name
-
-  ip_protocol = "TCP"
-
-  load_balancing_scheme = var.load_balancing_scheme
-
-  port_range = "80"
-
-  target = google_compute_target_http_proxy.cdn_http_proxy[0].id
-
-  ip_address = google_compute_global_address.cdn_ip.address
-
-  network_tier = var.network_tier
-}
-
-# --------------------------------------------------
-# Google Managed SSL Certificate
-# --------------------------------------------------
-
-resource "google_compute_managed_ssl_certificate" "cdn_ssl_certificate" {
-
-  count = var.enable_https ? 1 : 0
-
-  project = var.project_id
-
-  name = var.ssl_certificate_name
-
-  managed {
-
-    domains = var.domain_names
+    include_http_headers = [
+      "Accept"
+    ]
   }
-}
 
-# --------------------------------------------------
-# HTTPS Proxy
-# --------------------------------------------------
-
-resource "google_compute_target_https_proxy" "cdn_https_proxy" {
-
-  count = var.enable_https ? 1 : 0
-
-  project = var.project_id
-
-  name = var.https_proxy_name
-
-  url_map = google_compute_url_map.cdn_url_map.id
-
-  ssl_certificates = [
-    google_compute_managed_ssl_certificate.cdn_ssl_certificate[0].id
+  bypass_cache_on_request_headers = [
+    "Authorization"
   ]
-}
 
-# --------------------------------------------------
-# HTTPS Global Forwarding Rule
-# --------------------------------------------------
+  custom_response_headers = []
 
-resource "google_compute_global_forwarding_rule" "cdn_https_forwarding" {
+  edge_security_policy = null
 
-  count = var.enable_https ? 1 : 0
+  # URL Map
 
-  project = var.project_id
+  url_map_name = "demo-cdn-url-map"
 
-  name = var.https_forwarding_rule_name
+  url_map_description = "Sandbox CDN URL map"
 
-  ip_protocol = "TCP"
+  # Global IP
 
-  load_balancing_scheme = var.load_balancing_scheme
+  global_ip_name = "demo-cdn-global-ip"
 
-  port_range = "443"
+  ip_version = "IPV4"
 
-  target = google_compute_target_https_proxy.cdn_https_proxy[0].id
+  # HTTP Configuration
 
-  ip_address = google_compute_global_address.cdn_ip.address
+  enable_http = true
 
-  network_tier = var.network_tier
+  http_proxy_name = "demo-cdn-http-proxy"
+
+  http_forwarding_rule_name = "demo-cdn-http-forwarding"
+
+  # HTTPS Configuration
+
+  enable_https = false
+
+  domain_names = []
+
+  ssl_certificate_name = "demo-cdn-ssl"
+
+  https_proxy_name = "demo-cdn-https-proxy"
+
+  https_forwarding_rule_name = "demo-cdn-https-forwarding"
+
+  # Load Balancer
+
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  network_tier = "PREMIUM"
 }
