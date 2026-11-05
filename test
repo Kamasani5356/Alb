@@ -29,3 +29,10 @@ variable "cdn_path" {
   type    = string
   default = "/cdn/*"
 }
+
+
+existing_load_balancer_name = "external-global-alb"
+existing_default_service    = "https://www.googleapis.com/compute/v1/projects/uc-sandbox-1/global/backendServices/<name>"
+
+terraform import 'module.cloud_cdn.google_compute_url_map.url_map[0]' projects/uc-sandbox-1/global/urlMaps/external-global-alb
+terraform plan
